@@ -264,21 +264,30 @@ export default class MainScene extends Scene {
     }
   }
 
-  /**
-   * Render all the elements on the screen.
-   */
+   /** Refactored render using Extract Method */
   public override render(): void {
+    this.clearScreen();
+    this.drawBackground();
+    this.drawPlayer();
+    this.drawForeground();
+    this.drawHUD();
+  }
+
+  private clearScreen(): void {
     this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.canvasContext.fillStyle = 'black';
     this.canvasContext.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
 
-    // Draw the moving background (playground)
+  private drawBackground(): void {
     this.canvasContext.drawImage(this.playgroundImage, this.posPlaygroundX, this.posPlaygroundY);
+  }
 
-    // Draw the player on the playground
+  private drawPlayer(): void {
     const image: HTMLImageElement = this.playerImages[this.currentDirection]!;
     const spriteX: number = this.frameIndex * this.playerWidth;
     const spriteY: number = 0;
+
     this.canvasContext.drawImage(
       image,
       spriteX,
@@ -290,14 +299,17 @@ export default class MainScene extends Scene {
       this.playerWidth,
       this.playerHeight
     );
+  }
 
-    // Draw the foreground on top of the playground
-    this.canvasContext.drawImage(this.playgroundForeground,
-      this.posPlaygroundX, this.posPlaygroundY);
+  private drawForeground(): void {
+    this.canvasContext.drawImage(this.playgroundForeground, this.posPlaygroundX, this.posPlaygroundY);
+  }
 
+  private drawHUD(): void {
     CanvasRenderer.drawRectangle(this.canvas, 20, 20, 550, 100, 'black');
     CanvasRenderer.fillRectangle(this.canvas, 20, 20, 550, 100, 'rgba(0, 0, 0, 0.46)');
     CanvasRenderer.writeText(this.canvas, `PUNTEN: ${this.points}`, 50, 62, 'left', '"Press Start 2P", sans-serif', 20, 'white');
+
     if (this.points === 15) {
       CanvasRenderer.writeText(this.canvas, 'GA NAAR DE ZADENWINKEL', 50, 102, 'left', '"Press Start 2P", sans-serif', 20, 'white');
     } else if (this.points === 0) {
