@@ -169,77 +169,75 @@ export default class MainScene extends Scene {
     });
   }
 
-  /**
-  * Method that changes the player's position
-  * and checks for collision between the player and the boundaries
-  */
+   /** Refactored movePlayer using Extract Method */
   private movePlayer(player: Player, dx: number, dy: number, direction: string): void {
     this.currentDirection = direction;
-    const newPlayer: Player = { ...player, x: player.x + dx, y: player.y + dy };
     this.animatePlayer();
 
-    let isBlocked: boolean = false;
+    const newPlayer = this.createNewPlayerPosition(player, dx, dy);
 
-    function isColliding(player: { x: number; y: number; width: number; height: number },
-      boundary: Boundary): boolean {
-      return (
-        player.x < boundary.position.x + Boundary.width &&
-        player.x + player.width > boundary.position.x &&
-        player.y < boundary.position.y + Boundary.height &&
-        player.y + player.height > boundary.position.y
-      );
-    }
+    if (this.isBlocked(newPlayer)) return;
 
-    for (let i: number = 0; i < this.boundaries.length; i++) {
-      if (isColliding(newPlayer, this.boundaries[i]!)) {
-        isBlocked = true;
-        break;
-      }
-    }
-
-    if (!isBlocked) {
-      // Calculate current position of the player
-      const playerCol: number = Math.floor((newPlayer.x - this.posPlaygroundX) / Boundary.width);
-      const playerRow: number = Math.floor((newPlayer.y - this.posPlaygroundY) / Boundary.height);
-
-      // Check for teleportation
-      this.collisionsMap.forEach((row: number[], i: number) => {
-        row.forEach((symbol: number, j: number) => {
-          if (symbol === 2 && playerRow === i && playerCol === j &&
-            this.points > 10 && this.points < 110) {
-            this.teleportSeedsShop = true;
-          } else if (symbol === 3 && playerRow === i && playerCol === j && this.points === 0) {
-            this.teleportFruitsShop = true;
-          } else if (symbol === 4 && playerRow === i && playerCol === j && this.points === 10) {
-            this.teleportVegetablesShop = true;
-          } else if (symbol === 5 && playerRow === i && playerCol === j && this.points === 110) {
-            this.teleportSecondZone = true;
-          } else if (symbol === 6 && playerRow === i && playerCol === j) {
-            this.teleportDogScene = true;
-          }
-        });
-      });
-
-      // Move the background and the boundaries if there is no collision
-      this.posPlaygroundX -= dx;
-      this.posPlaygroundY -= dy;
-      this.boundaries.forEach((boundary: Boundary) => {
-        boundary.position.x -= dx;
-        boundary.position.y -= dy;
-      });
-    }
+    this.checkTeleport(newPlayer);
+    this.updateWorldPosition(dx, dy);
   }
 
-  /**
-   * Method that updates the player's animation frame
-   * based on the animation interval
-   */
+  /** Update player animation frame */
   private animatePlayer(): void {
-    this.animationTick = this.animationTick + 1;
+    this.animationTick += 1;
     if (this.animationTick >= this.animationInterval) {
       this.animationTick = 0;
       this.frameIndex = (this.frameIndex + 1) % this.frameCount;
     }
+  }
+
+  /** Extracted method: calculate new player position */
+  private createNewPlayerPosition(player: Player, dx: number, dy: number): Player {
+    return { ...player, x: player.x + dx, y: player.y + dy };
+  }
+
+  /** Extracted method: check if player collides with any boundary */
+  private isBlocked(player: Player): boolean {
+    return this.boundaries.some(boundary => this.isColliding(player, boundary));
+  }
+
+  /** Extracted method: single collision check */
+  private isColliding(player: Player, boundary: Boundary): boolean {
+    return (
+      player.x < boundary.position.x + Boundary.width &&
+      player.x + player.width > boundary.position.x &&
+      player.y < boundary.position.y + Boundary.height &&
+      player.y + player.height > boundary.position.y
+    );
+  }
+
+  /** Extracted method: teleport logic */
+  private checkTeleport(player: Player): void {
+    const playerCol = Math.floor((player.x - this.posPlaygroundX) / Boundary.width);
+    const playerRow = Math.floor((player.y - this.posPlaygroundY) / Boundary.height);
+
+    this.collisionsMap.forEach((row, i) => {
+      row.forEach((symbol, j) => {
+        if (playerRow !== i || playerCol !== j) return;
+
+        if (symbol === 2 && this.points > 10 && this.points < 110) this.teleportSeedsShop = true;
+        if (symbol === 3 && this.points === 0) this.teleportFruitsShop = true;
+        if (symbol === 4 && this.points === 10) this.teleportVegetablesShop = true;
+        if (symbol === 5 && this.points === 110) this.teleportSecondZone = true;
+        if (symbol === 6) this.teleportDogScene = true;
+      });
+    });
+  }
+
+  /** Extracted method: move the world and boundaries */
+  private updateWorldPosition(dx: number, dy: number): void {
+    this.posPlaygroundX -= dx;
+    this.posPlaygroundY -= dy;
+
+    this.boundaries.forEach(boundary => {
+      boundary.position.x -= dx;
+      boundary.position.y -= dy;
+    });
   }
 
   /**
